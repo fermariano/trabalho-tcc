@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<launch>
+    <copy file="erlangen.net.xml" />
+    <copy file="erlangen.poly.xml" />
+    <copy file="platoon.rou.xml" />
+    <copy file="platoon.sumo.cfg" type="config" />
+</launch>
