@@ -248,6 +248,11 @@ void MyVeinsApp::sendLeaderBeacon()
         writeLog(msg.str());
     }
 
+    // Allow followers to compute brake latency
+    if (leaderBrakeActualTime >= SIMTIME_ZERO) {
+        bsm->addPar("leaderBrakeTimeSec") = leaderBrakeActualTime.dbl();
+    }
+
     if (signDelay > SIMTIME_ZERO) {
         sendDelayedDown(bsm, signDelay);
     }
@@ -267,7 +272,7 @@ void MyVeinsApp::scheduleFollowerCommand(const DemoSafetyMessage* bsm)
     const simtime_t verifyDelay = samplePqcDelay(pqcVerifyDelay);
 
     const int rcvBytes = bsm->getBitLength() / 8;
-    const bool isBrake = (bsm->getSenderSpeed().length() < platoonCruiseSpeed * 0.5);
+    const bool isBrake = bsm->hasPar("leaderBrakeTimeSec");
 
     {
         std::ostringstream msg;
@@ -281,6 +286,9 @@ void MyVeinsApp::scheduleFollowerCommand(const DemoSafetyMessage* bsm)
 
     emit(pqcVerifyDelaySignal, verifyDelay.dbl());
     cmd->addPar("isBrake") = isBrake;
+    if (isBrake) {
+        cmd->addPar("leaderBrakeTimeSec") = bsm->par("leaderBrakeTimeSec").doubleValue();
+    }
     scheduleAt(simTime() + verifyDelay, cmd);
 }
 
@@ -299,8 +307,8 @@ void MyVeinsApp::applyFollowerCommand(cMessage* msg)
 
     const bool isBrake = msg->hasPar("isBrake") && msg->par("isBrake").boolValue();
 
-    if (isBrake && leaderBrakeActualTime >= SIMTIME_ZERO) {
-        const double latency = (simTime() - leaderBrakeActualTime).dbl();
+    if (isBrake && msg->hasPar("leaderBrakeTimeSec")) {
+        const double latency = simTime().dbl() - msg->par("leaderBrakeTimeSec").doubleValue();
         emit(brakeLatencySignal, latency);
         const char* safety = (measuredGap > 5.0) ? "SAFE" : (measuredGap > 1.0 ? "WARNING" : "CRITICAL");
         {

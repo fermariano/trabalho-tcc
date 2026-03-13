@@ -5,8 +5,8 @@
 
     <route id="platoonRoute" edges="-39539626 -5445204#2 -5445204#1 113939244#2 -126606716 23339459 30405358#1 85355912 85355911#0 85355911#1 30405356 5931612 30350450#0 30350450#1 30350450#2 4006702#0 4006702#1 4900043 4900041#1"/>
 
-    <vehicle id="0" type="platoonType" route="platoonRoute" depart="0.00" departLane="first" departPos="90" departSpeed="25"/>
-    <vehicle id="1" type="platoonType" route="platoonRoute" depart="0.00" departLane="first" departPos="65" departSpeed="25"/>
-    <vehicle id="2" type="platoonType" route="platoonRoute" depart="0.00" departLane="first" departPos="40" departSpeed="25"/>
+    <vehicle id="0" type="platoonType" route="platoonRoute" depart="0.00" departLane="first" departPos="60" departSpeed="25"/>
+    <vehicle id="1" type="platoonType" route="platoonRoute" depart="0.00" departLane="first" departPos="45" departSpeed="25"/>
+    <vehicle id="2" type="platoonType" route="platoonRoute" depart="0.00" departLane="first" departPos="30" departSpeed="25"/>
     <vehicle id="3" type="platoonType" route="platoonRoute" depart="0.00" departLane="first" departPos="15" departSpeed="25"/>
 </routes>
