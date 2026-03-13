@@ -51,6 +51,9 @@ simple MyVeinsApp extends DemoBaseApplLayer
     volatile double pqcDelayJitter @unit(s) = default(0s);
     bool randomizePqcDelay = default(false);
 
+    int mac80211pMtuBytes = default(1500);       // 802.11p practical MTU (bytes)
+    int mac80211pBitrateKbps = default(6000);    // 6 Mbps (base 802.11p rate)
+
     @signal[pqcPayloadBits](type=long);
     @statistic[pqcPayloadBits](title="BSM size with PQC overhead"; source=pqcPayloadBits; record=stats,vector; unit=bit; interpolationmode=none);
 
@@ -62,4 +65,13 @@ simple MyVeinsApp extends DemoBaseApplLayer
 
     @signal[appliedSpeed](type=double);
     @statistic[appliedSpeed](title="Speed commanded to follower after PQC verify"; source=appliedSpeed; record=stats,vector; unit=m/s; interpolationmode=linear);
+
+    @signal[fragmentCount](type=long);
+    @statistic[fragmentCount](title="Number of 802.11p fragments per beacon"; source=fragmentCount; record=stats,vector; unit=""; interpolationmode=none);
+
+    @signal[txDelay](type=double);
+    @statistic[txDelay](title="Over-the-air transmission time per beacon"; source=txDelay; record=stats,vector; unit=s; interpolationmode=none);
+
+    @signal[brakeMessageLatency](type=double);
+    @statistic[brakeMessageLatency](title="Time from leader brake event to follower command application"; source=brakeMessageLatency; record=stats,vector; unit=s; interpolationmode=none);
 }

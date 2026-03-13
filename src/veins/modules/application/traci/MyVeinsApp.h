@@ -98,6 +98,16 @@ protected:
     simsignal_t pqcSignDelaySignal;
     simsignal_t pqcVerifyDelaySignal;
     simsignal_t appliedSpeedSignal;
+
+    // Fragmentation + transmission metrics
+    int mac80211pMtuBytes;
+    int mac80211pBitrateKbps;
+    simsignal_t fragmentCountSignal;
+    simsignal_t txDelaySignal;
+    simsignal_t brakeLatencySignal;
+
+    // Brake latency tracking
+    simtime_t leaderBrakeActualTime;  // set by leader when brake fires
 };
 
 } // namespace veins
