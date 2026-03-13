@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <fstream>
+#include <sstream>
 #include <string>
 
 #include "veins/veins.h"
@@ -108,6 +110,11 @@ protected:
 
     // Brake latency tracking
     simtime_t leaderBrakeActualTime;  // set by leader when brake fires
+
+    // File-based logging
+    std::string logFilePrefix;
+    std::ofstream logFile;
+    void writeLog(const std::string& line);
 };
 
 } // namespace veins

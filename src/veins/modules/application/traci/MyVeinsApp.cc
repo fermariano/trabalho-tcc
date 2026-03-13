@@ -58,6 +58,7 @@ void MyVeinsApp::initialize(int stage)
         pqcVerifyDelay = par("pqcVerifyDelay");
         pqcDelayJitter = par("pqcDelayJitter");
         randomizePqcDelay = par("randomizePqcDelay").boolValue();
+        logFilePrefix = par("logFilePrefix").stdstringValue();
 
         mac80211pMtuBytes    = par("mac80211pMtuBytes").intValue();
         mac80211pBitrateKbps = par("mac80211pBitrateKbps").intValue();
@@ -78,6 +79,23 @@ void MyVeinsApp::initialize(int stage)
         vehicleIndex = resolveVehicleIndex();
         isLeader = (vehicleIndex == leaderVehicleId);
 
+        {
+            std::ostringstream fname;
+            fname << logFilePrefix << "_veh" << vehicleIndex << ".log";
+            logFile.open(fname.str(), std::ios::out | std::ios::trunc);
+            if (logFile.is_open()) {
+                logFile << "# Platoon simulation log\n"
+                        << "# prefix=" << logFilePrefix
+                        << " veh=" << vehicleIndex
+                        << " isLeader=" << (isLeader ? "true" : "false") << "\n"
+                        << "# pqcSig=" << pqcSignatureBytes << "B"
+                        << " pqcPubKey=" << pqcPublicKeyBytes << "B"
+                        << " mtu=" << mac80211pMtuBytes << "B"
+                        << " bitrate=" << mac80211pBitrateKbps << "kbps\n"
+                        << "#\n";
+            }
+        }
+
         if (isLeader) {
             leaderBeaconTimer = new cMessage("leaderBeaconTimer", LEADER_BEACON_EVT);
             leaderBrakeTimer = new cMessage("leaderBrakeTimer", LEADER_BRAKE_EVT);
@@ -86,7 +104,11 @@ void MyVeinsApp::initialize(int stage)
             if (traciVehicle) traciVehicle->setSpeed(platoonCruiseSpeed);
         }
 
-        EV_INFO << "Platoon app configured for vehicleId=" << vehicleIndex << " leader=" << isLeader << std::endl;
+        {
+            std::ostringstream msg;
+            msg << "Platoon app configured for vehicleId=" << vehicleIndex << " leader=" << (isLeader ? "true" : "false");
+            writeLog(msg.str());
+        }
     }
 }
 
@@ -103,6 +125,8 @@ void MyVeinsApp::finish()
     recordScalar("pqcVerifyDelayParam_s", pqcVerifyDelay.dbl());
     recordScalar("mac80211pMtuBytes",    mac80211pMtuBytes);
     recordScalar("mac80211pBitrateKbps", mac80211pBitrateKbps);
+
+    if (logFile.is_open()) logFile.close();
 }
 
 void MyVeinsApp::onBSM(DemoSafetyMessage* bsm)
@@ -135,11 +159,14 @@ void MyVeinsApp::handleSelfMsg(cMessage* msg)
             traciVehicle->slowDown(leaderBrakeTargetSpeed, leaderBrakeDuration);
         }
         leaderBrakeActualTime = simTime();
-        EV_INFO << "[BRAKE] t=" << simTime()
+        {
+            std::ostringstream msg;
+            msg << "[BRAKE] t=" << simTime()
                 << " leader veh=" << vehicleIndex
-                << " decelerating " << platoonCruiseSpeed << "m/s → "
-                << leaderBrakeTargetSpeed << "m/s over " << leaderBrakeDuration << "s"
-                << std::endl;
+                << " decelerating " << platoonCruiseSpeed << "m/s -> "
+                << leaderBrakeTargetSpeed << "m/s over " << leaderBrakeDuration << "s";
+            writeLog(msg.str());
+        }
         return;
     }
 
@@ -154,6 +181,15 @@ void MyVeinsApp::handleSelfMsg(cMessage* msg)
 void MyVeinsApp::handlePositionUpdate(cObject* obj)
 {
     DemoBaseApplLayer::handlePositionUpdate(obj);
+}
+
+void MyVeinsApp::writeLog(const std::string& line)
+{
+    EV_INFO << line << std::endl;
+    if (logFile.is_open()) {
+        logFile << line << "\n";
+        logFile.flush();
+    }
 }
 
 simtime_t MyVeinsApp::samplePqcDelay(simtime_t baseDelay) const
@@ -201,13 +237,16 @@ void MyVeinsApp::sendLeaderBeacon()
     emit(fragmentCountSignal,   static_cast<long>(numFragments));
     emit(txDelaySignal,         txDelaySec);
 
-    EV_INFO << "[BSM-TX] t=" << simTime()
+    {
+        std::ostringstream msg;
+        msg << "[BSM-TX] t=" << simTime()
             << " veh=" << vehicleIndex
             << " size=" << totalBytes << "B"
             << " frags=" << numFragments
             << " signDelay=" << (signDelay.dbl() * 1000.0) << "ms"
-            << " txDelay=" << (txDelaySec * 1000.0) << "ms"
-            << std::endl;
+            << " txDelay=" << (txDelaySec * 1000.0) << "ms";
+        writeLog(msg.str());
+    }
 
     if (signDelay > SIMTIME_ZERO) {
         sendDelayedDown(bsm, signDelay);
@@ -230,12 +269,15 @@ void MyVeinsApp::scheduleFollowerCommand(const DemoSafetyMessage* bsm)
     const int rcvBytes = bsm->getBitLength() / 8;
     const bool isBrake = (bsm->getSenderSpeed().length() < platoonCruiseSpeed * 0.5);
 
-    EV_INFO << "[BSM-RX] t=" << simTime()
+    {
+        std::ostringstream msg;
+        msg << "[BSM-RX] t=" << simTime()
             << " veh=" << vehicleIndex
             << " size=" << rcvBytes << "B"
             << " verifyDelay=" << (verifyDelay.dbl() * 1000.0) << "ms"
-            << (isBrake ? " *** BRAKE BEACON ***" : "")
-            << std::endl;
+            << (isBrake ? " *** BRAKE BEACON ***" : "");
+        writeLog(msg.str());
+    }
 
     emit(pqcVerifyDelaySignal, verifyDelay.dbl());
     cmd->addPar("isBrake") = isBrake;
@@ -261,26 +303,32 @@ void MyVeinsApp::applyFollowerCommand(cMessage* msg)
         const double latency = (simTime() - leaderBrakeActualTime).dbl();
         emit(brakeLatencySignal, latency);
         const char* safety = (measuredGap > 5.0) ? "SAFE" : (measuredGap > 1.0 ? "WARNING" : "CRITICAL");
-        EV_INFO << "[BRAKE-RX] t=" << simTime()
+        {
+            std::ostringstream msg;
+            msg << "[BRAKE-RX] t=" << simTime()
                 << " veh=" << vehicleIndex
                 << " latency=" << (latency * 1000.0) << "ms"
                 << " gap=" << measuredGap << "m"
-                << " status=" << safety
-                << std::endl;
+                << " status=" << safety;
+            writeLog(msg.str());
+        }
     }
 
     double targetSpeed = leaderSpeed + followerControllerGain * gapError;
     targetSpeed = std::max(0.0, std::min(targetSpeed, platoonCruiseSpeed));
 
-    EV_INFO << "[CTRL] t=" << simTime()
+    {
+        std::ostringstream msg;
+        msg << "[CTRL] t=" << simTime()
             << " veh=" << vehicleIndex
             << " rank=" << followerRank
             << " gap=" << measuredGap << "m"
             << " desired=" << desiredGap << "m"
             << " err=" << gapError << "m"
             << " leaderSpd=" << leaderSpeed << "m/s"
-            << " → target=" << targetSpeed << "m/s"
-            << std::endl;
+            << " -> target=" << targetSpeed << "m/s";
+        writeLog(msg.str());
+    }
 
     traciVehicle->slowDown(targetSpeed, followerControlHorizon);
     emit(appliedSpeedSignal, targetSpeed);

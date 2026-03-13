@@ -51,6 +51,8 @@ simple MyVeinsApp extends DemoBaseApplLayer
     volatile double pqcDelayJitter @unit(s) = default(0s);
     bool randomizePqcDelay = default(false);
 
+    string logFilePrefix = default("platoon"); // prefix for per-vehicle log files
+
     int mac80211pMtuBytes = default(1500);       // 802.11p practical MTU (bytes)
     int mac80211pBitrateKbps = default(6000);    // 6 Mbps (base 802.11p rate)
 
