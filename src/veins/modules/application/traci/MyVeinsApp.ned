@@ -50,4 +50,16 @@ simple MyVeinsApp extends DemoBaseApplLayer
     volatile double pqcVerifyDelay @unit(s) = default(5ms);
     volatile double pqcDelayJitter @unit(s) = default(0s);
     bool randomizePqcDelay = default(false);
+
+    @signal[pqcPayloadBits](type=long);
+    @statistic[pqcPayloadBits](title="BSM size with PQC overhead"; source=pqcPayloadBits; record=stats,vector; unit=bit; interpolationmode=none);
+
+    @signal[pqcSignDelay](type=double);
+    @statistic[pqcSignDelay](title="PQC signing delay per beacon"; source=pqcSignDelay; record=stats,vector; unit=s; interpolationmode=none);
+
+    @signal[pqcVerifyDelay](type=double);
+    @statistic[pqcVerifyDelay](title="PQC verification delay per received beacon"; source=pqcVerifyDelay; record=stats,vector; unit=s; interpolationmode=none);
+
+    @signal[appliedSpeed](type=double);
+    @statistic[appliedSpeed](title="Speed commanded to follower after PQC verify"; source=appliedSpeed; record=stats,vector; unit=m/s; interpolationmode=linear);
 }

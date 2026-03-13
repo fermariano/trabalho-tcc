@@ -92,6 +92,8 @@ void MyVeinsApp::finish()
     recordScalar("vehicleIndex", vehicleIndex);
     recordScalar("isLeader", isLeader ? 1 : 0);
     recordScalar("pqcOverheadBitsPerBeacon", pqcOverheadBits);
+    recordScalar("pqcSignDelayParam_s", pqcSignDelay.dbl());
+    recordScalar("pqcVerifyDelayParam_s", pqcVerifyDelay.dbl());
 }
 
 void MyVeinsApp::onBSM(DemoSafetyMessage* bsm)
@@ -214,6 +216,14 @@ void MyVeinsApp::applyFollowerCommand(cMessage* msg)
 
     double targetSpeed = leaderSpeed + followerControllerGain * gapError;
     targetSpeed = std::max(0.0, std::min(targetSpeed, platoonCruiseSpeed));
+
+    EV_INFO << "Follower rank=" << followerRank
+            << " measuredGap=" << measuredGap << "m"
+            << " desiredGap=" << desiredGap << "m"
+            << " gapError=" << gapError << "m"
+            << " leaderSpeed=" << leaderSpeed << "m/s"
+            << " -> targetSpeed=" << targetSpeed << "m/s"
+            << " at t=" << simTime() << std::endl;
 
     traciVehicle->slowDown(targetSpeed, followerControlHorizon);
     emit(appliedSpeedSignal, targetSpeed);
